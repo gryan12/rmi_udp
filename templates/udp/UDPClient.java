@@ -3,6 +3,7 @@
  */
 package udp;
 
+import java.io.*; 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -16,7 +17,10 @@ public class UDPClient {
 
 	private DatagramSocket sendSoc;
 
+
 	public static void main(String[] args) {
+		System.out.println("Client initiated"); 
+
 		InetAddress	serverAddr = null;
 		int			recvPort;
 		int 		countTo;
@@ -29,6 +33,7 @@ public class UDPClient {
 		}
 
 		try {
+			System.out.println("Trying to find server"); 
 			serverAddr = InetAddress.getByName(args[0]);
 		} catch (UnknownHostException e) {
 			System.out.println("Bad server address in UDPClient, " + args[0] + " caused an unknown host exception " + e);
@@ -39,8 +44,8 @@ public class UDPClient {
 
 
 		// TO-DO: Construct UDP client class and try to send messages
-        UDPClient client = new UDPClient();
-        client.testLoop(serverAddr, recvPort, countTo);
+		UDPClient client = new UDPClient();
+		client.testLoop(serverAddr, recvPort, countTo);
 	}
 
 	public UDPClient() {

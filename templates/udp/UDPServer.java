@@ -2,7 +2,6 @@
  * Created on 01-Mar-2016
  */
 package udp;
-
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -15,7 +14,6 @@ import com.sun.jdi.IntegerType;
 import common.MessageInfo;
 
 public class UDPServer {
-
 	private DatagramSocket recvSoc;
 	private int totalMessages = -1;
 	private int[] receivedMessages;
@@ -61,12 +59,14 @@ public class UDPServer {
 
 		// TO-DO: On receipt of first message, initialise the receive buffer
         if (receivedMessages == null || totalMessages < 0) {
+		System.out.println("Buffer init"); 
         	totalMessages = msg.totalMessages;
         	receivedMessages = new int[totalMessages];
 		}
 
 		// TO-DO: Log receipt of the message
         receivedMessages[msg.messageNum] = 1;
+	System.out.println("Message: " + msg.messageNum + " received"); 
 
 		// TO-DO: If this is the last expected message, then identify
 		//        any missing messages
