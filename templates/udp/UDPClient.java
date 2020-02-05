@@ -16,8 +16,6 @@ import common.MessageInfo;
 public class UDPClient {
 
 	private DatagramSocket sendSoc;
-
-
 	public static void main(String[] args) {
 		System.out.println("Client initiated"); 
 
@@ -33,8 +31,8 @@ public class UDPClient {
 		}
 
 		try {
-			System.out.println("Trying to find server"); 
 			serverAddr = InetAddress.getByName(args[0]);
+			System.out.println("Should have found server"); 
 		} catch (UnknownHostException e) {
 			System.out.println("Bad server address in UDPClient, " + args[0] + " caused an unknown host exception " + e);
 			System.exit(-1);

@@ -17,38 +17,35 @@ public class UDPServer {
 	private DatagramSocket recvSoc;
 	private int totalMessages = -1;
 	private int[] receivedMessages;
+	MessageInfo msg = null;
 	private boolean close;
 
-	private void run() {
+	private void run() throws SocketTimeoutException {
 		int				pacSize;
 		byte[]			pacData;
 		DatagramPacket 	pac;
 
 		// TO-DO: Receive the messages and process them by calling processMessage(...).
 		//        Use a timeout (e.g. 30 secs) to ensure the program doesn't block forever
-
-		try {
-			pacSize = 1024;
-
 			while (!close) {
+			    pacSize = 4000;
 			    pacData = new byte[pacSize];
 			    pac = new DatagramPacket(pacData, pacSize);
 			    try {
-			    	recvSoc.setSoTimeout(30000);
+			    	recvSoc.setSoTimeout(50000);//high to give me more time to move between pcs..
 			    	recvSoc.receive(pac);
-				} catch (SocketTimeoutException e) {
+
+				} catch (IOException e) {
 					System.out.println("Exception: " + e);
-					System.exit(-69);
+				       outputIfLost(msg); 
+					System.exit(-9);
 				}
+			    processMessage(new String(pac.getData())); 
 			}
-		} catch (IOException e) {
-			System.out.println("Exception: " + e);
-		}
 	}
 
 	public void processMessage(String data) {
 
-		MessageInfo msg = null;
 
 		// TO-DO: Use the data to construct a new MessageInfo object
 		try {
@@ -58,21 +55,20 @@ public class UDPServer {
 		}
 
 		// TO-DO: On receipt of first message, initialise the receive buffer
-        if (receivedMessages == null || totalMessages < 0) {
-		System.out.println("Buffer init"); 
+        if (receivedMessages == null || msg.totalMessages != totalMessages) {
         	totalMessages = msg.totalMessages;
         	receivedMessages = new int[totalMessages];
 		}
 
 		// TO-DO: Log receipt of the message
         receivedMessages[msg.messageNum] = 1;
-	System.out.println("Message: " + msg.messageNum + " received"); 
+	//System.out.println(msg.messageNum + " received"); 
 
 		// TO-DO: If this is the last expected message, then identify
 		//        any missing messages
+		if (msg.messageNum + 1 == totalMessages) { //gna 1-index hte messages
+			ArrayList<Integer> missingIDs = new ArrayList<>();
 
-		ArrayList<Integer> missingIDs = new ArrayList<>();
-		if (msg.messageNum + 1 == totalMessages) { //if last
 			for (int i = 0; i < receivedMessages.length; i++) {
 				if (receivedMessages[i] == 0) {
 				    missingIDs.add(i);
@@ -90,6 +86,10 @@ public class UDPServer {
 				System.out.println(output);
 			}
 
+			int total = totalMessages - missingIDs.size(); 
+			System.out.println("The total number of messages received is: " + Integer.toString(total)); 
+		//	totalMessages = -1; 
+		//	receivedMessages = null; 
 		}
 
 	}
@@ -98,6 +98,7 @@ public class UDPServer {
 		// TO-DO: Initialise UDP socket for receiving data
         try {
         	recvSoc = new DatagramSocket(rp);
+		System.out.println("should have init dgram socket"); 
 		} catch (SocketException e) {
 			System.out.println("Exception: " + e);
 		}
@@ -106,9 +107,30 @@ public class UDPServer {
 		System.out.println("UDPServer ready");
 	}
 
+	public void outputIfLost(MessageInfo msg) {
+		ArrayList<Integer> missingIDs = new ArrayList<>();
+		for (int i = 0; i < receivedMessages.length; i++) {
+			if (receivedMessages[i] == 0) {
+			    missingIDs.add(i);
+			}
+		}
+
+		if (missingIDs.size() == 0) {
+			System.out.println("No messages were lost!");
+		} else {
+			System.out.println(missingIDs.size() + " messages were lost.");
+			String output = "Missing IDs are: ";
+			for (int ID: missingIDs) {
+			    output += ID + ", ";
+			}
+			System.out.println(output);
+		}
+		int total = totalMessages - missingIDs.size(); 
+		System.out.println("The total number of messages received is: " + Integer.toString(total)); 
+	}
+
 	public static void main(String args[]) {
 		int	recvPort;
-
 		// Get the parameters from command line
 		if (args.length < 1) {
 			System.err.println("Arguments required: recv port");
@@ -117,10 +139,12 @@ public class UDPServer {
 		recvPort = Integer.parseInt(args[0]);
 
 		// TO-DO: Construct Server object and start it by calling run().
-       recvPort = Integer.parseInt(args[0]) ;
-       UDPServer server = new UDPServer(recvPort);
-
-       server.run();
+	       UDPServer server = new UDPServer(recvPort);
+	       try {
+		       server.run();
+	       } catch(SocketTimeoutException e) {
+		       System.out.println("Exception: " + e); 
+	       }
 	}
 
 }

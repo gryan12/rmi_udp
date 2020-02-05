@@ -9,6 +9,7 @@ import java.rmi.Remote;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
+import java.rmi.RMISecurityManager;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,35 +18,27 @@ import common.*;
 
 public class RMIServer extends UnicastRemoteObject implements RMIServerI {
 
-
-	private static int port = 1099; //default port, makes things chill
-
 	private int totalMessages = -1;
 	private int[] receivedMessages;
-
-	public RMIServer() throws RemoteException {
-	}
-
+	public RMIServer() throws RemoteException {}
 	public void receiveMessage(MessageInfo msg) throws RemoteException {
-
-		if (msg.totalMessages <= 0) {
-			System.out.println("Receiving 0 messages");
-			throw new RemoteException(); // maybe return rather than throwing an error?
-		}
+//		if (msg.totalMessages <= 0) {
+//			System.out.println("Receiving 0 messages");
+//			throw new RemoteException(); // maybe return rather than throwing an error?
+//		}
 
 		// TO-DO: On receipt of first message, initialise the receive buffer
-		if (totalMessages < 0) {
+		if (receivedMessages == null || msg.messageNum == 0) {
 			receivedMessages = new int[msg.totalMessages];
-			totalMessages = 0;
+			totalMessages = msg.totalMessages; 
 		}
 		// TO-DO: Log receipt of the message
-        totalMessages++;
-		//have indices matching message numbers
 		receivedMessages[msg.messageNum] = 1;
+
 		// TO-DO: If this is the last expected message, then identify
 		//        any missing messages
 
-		if (totalMessages == msg.totalMessages) {
+		if (msg.messageNum == totalMessages-1) {
 			ArrayList<Integer> missingIndeces = new ArrayList<>();
 			for (int i= 0; i < receivedMessages.length; i++) {
 				if (receivedMessages[i] != 1) {
@@ -53,6 +46,7 @@ public class RMIServer extends UnicastRemoteObject implements RMIServerI {
 				}
 			}
 
+			System.out.println("The (putatitvely) intended number of messages sent was: " + totalMessages); 
 			if (missingIndeces.isEmpty()) {
 				System.out.println("All expected messages received");
 			} else {
@@ -62,11 +56,12 @@ public class RMIServer extends UnicastRemoteObject implements RMIServerI {
 				}
 			    output += " were expected but not receieved.";
 				System.out.println(output);
+				System.out.println("The total number of messages received was: " + (totalMessages - missingIndeces.size())); 
 			}
+
 		}
-		//i miss C..
-		receivedMessages = null;
-		totalMessages = -1;
+	//	receivedMessages = null;
+	//	totalMessages = -1;
 	}
 
 
@@ -74,22 +69,24 @@ public class RMIServer extends UnicastRemoteObject implements RMIServerI {
 		RMIServer rmis = null;
 		// TO-DO: Initialise Security Manager
 		if (System.getSecurityManager() == null) {
-			System.setSecurityManager(new SecurityManager());
-			System.out.println("Secutity manager init"); 
+			System.setSecurityManager(new RMISecurityManager());
 		}
 
 		// TO-DO: Instantiate the server class
 		try {
 			rmis = new RMIServer();
-			System.out.println("Instantiated rmi server"); 
+			System.out.println("Server (should be) insantatied"); 
+			rebindServer("RMIServer",rmis); 
+			//LocateRegistry.createRegistry(6969); 
+			//Naming.rebind("RMIServer", new RMIServer()); 
+
 		} catch (RemoteException e) {
 			System.out.println(e.getMessage());
 			System.exit(1);
 		}
 
 		// TO-DO: Bind to RMI registry. only perform if successful instantiation
-		rebindServer("localhost", rmis);
-
+		//rebindServer("RMIServer", rmis);
 	}
 
 	protected static void rebindServer(String serverURL, RMIServer server) {
@@ -102,11 +99,9 @@ public class RMIServer extends UnicastRemoteObject implements RMIServerI {
 		// Note - Registry.rebind (as returned by createRegistry / getRegistry) does something similar but
 		// expects different things from the URL field.
 		try {
-			System.out.println("Trying to find or create registry"); 
 			Registry registry = LocateRegistry.createRegistry(1099);
-			System.out.println("Found/Created registry"); 
 			registry.rebind(serverURL, server);
-			System.out.println("Rebound registry"); 
+			System.out.println("Rebound registry, should be rdy to go"); 
 		} catch (RemoteException e){
 			System.out.println("Exception: " + e);
 		}
